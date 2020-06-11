@@ -37,6 +37,9 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                 if (!configuration['codeStatsInsights.query']) {
                     return []
                 }
+                const query = viewer
+                    ? `repo:^${escapeRegExp(parseUri(viewer.directory.uri).repo)}$`
+                    : configuration['codeStatsInsights.query']
                 return defer(() =>
                     queryGraphQL(
                         gql`
@@ -54,11 +57,7 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                                 }
                             }
                         `,
-                        {
-                            query: viewer
-                                ? `repo:^${escapeRegExp(parseUri(viewer.directory.uri).repo)}$`
-                                : configuration['codeStatsInsights.query'],
-                        }
+                        { query }
                     )
                 ).pipe(
                     retry(3),
@@ -66,6 +65,8 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                     map(
                         (stats): sourcegraph.View => {
                             const totalLines = Math.max(...stats.languages.map(language => language.totalLines))
+                            const linkURL = new URL('/stats', sourcegraph.internal.sourcegraphURL)
+                            linkURL.searchParams.set('q', query)
                             return {
                                 title: configuration['codeStatsInsights.title'] ?? 'Language usage',
                                 content: [
@@ -78,10 +79,12 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                                                     .map(language => ({
                                                         ...language,
                                                         fill: languageColors[language.name],
+                                                        linkURL: linkURL.href,
                                                     })),
                                                 dataKey: 'totalLines',
                                                 nameKey: 'name',
                                                 fillKey: 'fill',
+                                                linkURLKey: 'linkURL',
                                             },
                                         ],
                                     },
