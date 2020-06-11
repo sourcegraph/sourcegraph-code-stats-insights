@@ -3,6 +3,7 @@ import { from, defer } from 'rxjs'
 import { switchMap, map, retry } from 'rxjs/operators'
 import { IQuery, IGraphQLResponseRoot } from './schema'
 import gql from 'tagged-template-noop'
+import { escapeRegExp } from 'lodash'
 
 const languageColors: Record<string, string | undefined> = {
     Go: '#00ACD7',
@@ -24,8 +25,12 @@ const queryGraphQL = async <T = IQuery>(query: string, variables: object = {}): 
     return (data as any) as T
 }
 
+const parseUri = (uri: URL): { repo: string } => {
+    return { repo: uri.hostname + uri.pathname }
+}
+
 export function activate(context: sourcegraph.ExtensionContext): void {
-    const provideView = () => {
+    const provideView = ({ viewer }: { viewer?: sourcegraph.DirectoryViewer }) => {
         return from(sourcegraph.configuration).pipe(
             map(() => sourcegraph.configuration.get().value),
             switchMap(configuration => {
@@ -49,7 +54,11 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                                 }
                             }
                         `,
-                        { query: configuration['codeStatsInsights.query'] }
+                        {
+                            query: viewer
+                                ? `repo:^${escapeRegExp(parseUri(viewer.directory.uri).repo)}$`
+                                : configuration['codeStatsInsights.query'],
+                        }
                     )
                 ).pipe(
                     retry(3),
@@ -85,8 +94,14 @@ export function activate(context: sourcegraph.ExtensionContext): void {
         )
     }
     context.subscriptions.add(
-        sourcegraph.app.registerViewProvider('codeStatsInsights.languages', {
+        sourcegraph.app.registerViewProvider('codeStatsInsights.languages.insightsPage', {
             where: 'insightsPage',
+            provideView,
+        })
+    )
+    context.subscriptions.add(
+        sourcegraph.app.registerViewProvider('codeStatsInsights.languages.directory', {
+            where: 'directory',
             provideView,
         })
     )

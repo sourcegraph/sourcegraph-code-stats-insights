@@ -24,10 +24,12 @@
       "type": "object",
       "properties": {
         "codeStatsInsights.query": {
-          "type": "string"
+          "type": "string",
+          "description": "The repo query to use on the insights page"
         },
         "codeStatsInsights.title": {
-          "type": "string"
+          "type": "string",
+          "description": "The title for the insight"
         }
       }
     }
@@ -54,6 +56,7 @@
   "devDependencies": {
     "@sourcegraph/eslint-config": "^0.19.2",
     "@sourcegraph/tsconfig": "^4.0.1",
+    "@types/lodash": "^4.14.155",
     "eslint": "^7.2.0",
     "lnfs-cli": "^2.1.0",
     "mkdirp": "^1.0.4",
@@ -64,6 +67,7 @@
     "typescript": "^3.9.5"
   },
   "dependencies": {
+    "lodash": "^4.17.15",
     "open-color": "^1.7.0",
     "rxjs": "^6.5.5"
   }
