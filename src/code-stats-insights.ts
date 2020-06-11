@@ -67,7 +67,7 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                         (stats): sourcegraph.View => {
                             const totalLines = Math.max(...stats.languages.map(language => language.totalLines))
                             return {
-                                title: configuration['codeStatsInsights.title'],
+                                title: configuration['codeStatsInsights.title'] ?? 'Language usage',
                                 content: [
                                     {
                                         chart: 'pie',
