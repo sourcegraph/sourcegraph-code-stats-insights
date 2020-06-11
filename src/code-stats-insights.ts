@@ -3,7 +3,7 @@ import { from, defer } from 'rxjs'
 import { switchMap, map, retry } from 'rxjs/operators'
 import { IQuery, IGraphQLResponseRoot } from './schema'
 import gql from 'tagged-template-noop'
-import { escapeRegExp } from 'lodash'
+import { escapeRegExp, partition, sum } from 'lodash'
 
 const languageColors: Record<string, string | undefined> = {
     Go: '#00ACD7',
@@ -11,6 +11,7 @@ const languageColors: Record<string, string | undefined> = {
     JavaScript: 'rgb(247, 223, 30)',
     HTML: 'rgb(228, 77, 38)',
     Markdown: '#4d4d4d',
+    Other: 'gray',
 }
 
 const queryGraphQL = async <T = IQuery>(query: string, variables: object = {}): Promise<T> => {
@@ -64,9 +65,14 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                     map(data => data.search!.stats),
                     map(
                         (stats): sourcegraph.View => {
-                            const totalLines = Math.max(...stats.languages.map(language => language.totalLines))
+                            const totalLines = sum(stats.languages.map(language => language.totalLines))
                             const linkURL = new URL('/stats', sourcegraph.internal.sourcegraphURL)
                             linkURL.searchParams.set('q', query)
+                            const otherThreshold = configuration['codeStatsInsights.otherThreshold'] ?? 0.03
+                            const [notOther, other] = partition(
+                                stats.languages,
+                                language => language.totalLines / totalLines >= otherThreshold
+                            )
                             return {
                                 title: configuration['codeStatsInsights.title'] ?? 'Language usage',
                                 content: [
@@ -74,13 +80,17 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                                         chart: 'pie',
                                         pies: [
                                             {
-                                                data: stats.languages
-                                                    .filter(language => language.totalLines / totalLines >= 0.05)
-                                                    .map(language => ({
-                                                        ...language,
-                                                        fill: languageColors[language.name],
-                                                        linkURL: linkURL.href,
-                                                    })),
+                                                data: [
+                                                    ...notOther,
+                                                    {
+                                                        name: 'Other',
+                                                        totalLines: sum(other.map(language => language.totalLines)),
+                                                    },
+                                                ].map(language => ({
+                                                    ...language,
+                                                    fill: languageColors[language.name],
+                                                    linkURL: linkURL.href,
+                                                })),
                                                 dataKey: 'totalLines',
                                                 nameKey: 'name',
                                                 fillKey: 'fill',

@@ -34,6 +34,10 @@
         "codeStatsInsights.title": {
           "type": "string",
           "description": "The title for the insight"
+        },
+        "codeStatsInsights.otherThreshold": {
+          "type": "number",
+          "description": "The threshold below which a language is counted as part of 'Other'"
         }
       }
     }
