@@ -37,7 +37,10 @@
         },
         "codeStatsInsights.otherThreshold": {
           "type": "number",
-          "description": "The threshold below which a language is counted as part of 'Other'"
+          "description": "The threshold below which a language is counted as part of 'Other'",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.03
         }
       }
     }
