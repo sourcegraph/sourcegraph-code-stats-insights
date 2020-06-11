@@ -8,7 +8,11 @@
     "*"
   ],
   "wip": true,
-  "categories": [],
+  "categories": [
+    "Code analysis",
+    "Reports and stats",
+    "Insights"
+  ],
   "tags": [],
   "repository": {
     "type": "git",
