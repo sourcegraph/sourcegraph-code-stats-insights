@@ -4,15 +4,10 @@ import { switchMap, map, retry } from 'rxjs/operators'
 import { IQuery, IGraphQLResponseRoot } from './schema'
 import gql from 'tagged-template-noop'
 import { escapeRegExp, partition, sum } from 'lodash'
+import linguistLanguages from 'linguist-languages'
 
-const languageColors: Record<string, string | undefined> = {
-    Go: '#00ACD7',
-    TypeScript: '#007acc',
-    JavaScript: 'rgb(247, 223, 30)',
-    HTML: 'rgb(228, 77, 38)',
-    Markdown: '#4d4d4d',
-    Other: 'gray',
-}
+const isLinguistLanguage = (language: string): language is keyof typeof linguistLanguages =>
+    Object.prototype.hasOwnProperty.call(linguistLanguages, language)
 
 const queryGraphQL = async <T = IQuery>(query: string, variables: object = {}): Promise<T> => {
     const { data, errors }: IGraphQLResponseRoot = await sourcegraph.commands.executeCommand(
@@ -88,7 +83,9 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                                                     },
                                                 ].map(language => ({
                                                     ...language,
-                                                    fill: languageColors[language.name],
+                                                    fill: isLinguistLanguage(language.name)
+                                                        ? linguistLanguages[language.name].color
+                                                        : 'gray',
                                                     linkURL: linkURL.href,
                                                 })),
                                                 dataKey: 'totalLines',
