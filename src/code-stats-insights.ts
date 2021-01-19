@@ -83,9 +83,10 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                                                     },
                                                 ].map(language => ({
                                                     ...language,
-                                                    fill: isLinguistLanguage(language.name)
-                                                        ? linguistLanguages[language.name].color
-                                                        : 'gray',
+                                                    fill:
+                                                        (isLinguistLanguage(language.name) &&
+                                                            linguistLanguages[language.name].color) ||
+                                                        'gray',
                                                     linkURL: linkURL.href,
                                                 })),
                                                 dataKey: 'totalLines',

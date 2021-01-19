@@ -4865,10 +4865,10 @@ lines-and-columns@^1.1.6:
   resolved "https://registry.npmjs.org/lines-and-columns/-/lines-and-columns-1.1.6.tgz#1c00c743b433cd0a4e80758f7b64a57440d9ff00"
   integrity sha1-HADHQ7QzzQpOgHWPe2SldEDZ/wA=
 
-linguist-languages@^7.9.0:
-  version "7.9.0"
-  resolved "https://registry.npmjs.org/linguist-languages/-/linguist-languages-7.9.0.tgz#025b421ff3acfdf9c9b34640816041bf842b5437"
-  integrity sha512-saKTpS7BH8vOOwzrZNTkFL/DuT2JN7cg6oHWY8nAjt89+pV1qFcpbjEEcZdAv9ogc4DcxVFHkXmjeyU/DiFHQw==
+linguist-languages@^7.12.2:
+  version "7.12.2"
+  resolved "https://registry.npmjs.org/linguist-languages/-/linguist-languages-7.12.2.tgz#246e22ed088a0afc4fa3b48ef4e136eb45f6703d"
+  integrity sha512-xRtwDRdTLNff0/8Gr65rJBC/lXdQwDH1/UIKFK9UvpXBEFhsgT5J7jEJMGT+IbsA3WGKJSjxuEZxakuYoToqRg==
 
 lnfs-cli@^2.1.0:
   version "2.1.0"

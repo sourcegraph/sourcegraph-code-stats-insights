@@ -78,7 +78,7 @@
     "typescript": "^3.9.5"
   },
   "dependencies": {
-    "linguist-languages": "^7.9.0",
+    "linguist-languages": "^7.12.2",
     "lodash": "^4.17.15",
     "open-color": "^1.7.0",
     "rxjs": "^6.5.5"
