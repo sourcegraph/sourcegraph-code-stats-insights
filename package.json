@@ -42,6 +42,38 @@
           "maximum": 1,
           "default": 0.03
         }
+      },
+      "patternProperties": {
+        "^codeStatsInsights\\.insight\\.": {
+          "anyOf": [
+            { "enum": ["null","false"]},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "repository"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "The title for the insight"
+                },
+                "repository": {
+                  "type": "string",
+                  "description": "The title for the insight"
+                },
+                "otherThreshold": {
+                  "type": "number",
+                  "description": "The threshold below which a language is counted as part of 'Other'",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "default": 0.03
+                }
+              }
+            }
+          ]
+        }
       }
     }
   },
