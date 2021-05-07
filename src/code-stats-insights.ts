@@ -1,6 +1,6 @@
 import * as sourcegraph from 'sourcegraph'
-import { from, defer } from 'rxjs'
-import { map, retry, startWith, distinctUntilChanged, mergeAll } from 'rxjs/operators'
+import { from, defer, Subscription } from 'rxjs'
+import { map, retry, startWith, distinctUntilChanged, mergeAll, tap } from 'rxjs/operators'
 import gql from 'tagged-template-noop'
 import { escapeRegExp, partition, sum } from 'lodash'
 import isEqual from 'lodash/isEqual'
@@ -71,22 +71,32 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                 ]
 
 
-                return [...insightsFromCreationFlow, insightFromOldAPI]
+                return [insightFromOldAPI, ...insightsFromCreationFlow,]
             }
         ),
         distinctUntilChanged((a, b) => isEqual(a, b))
     )
 
+    // Further in main context.subscriptions we have nested calls of context.subscriptions
+    // as well, because of this we have to manage inner subscription ourselves. This
+    // subscription bag needed to unsubscribe nested calls in a moment when user/org settings
+    // have been updated.
+    let previousSubscriptions = new Subscription();
+
     context.subscriptions.add(
         insightChanges.pipe(
-            mergeAll()
+            tap(() => {
+                previousSubscriptions.unsubscribe()
+                previousSubscriptions = new Subscription();
+            }),
+            mergeAll(),
         ).subscribe(([id, insight]) => {
             if (!insight) {
                 return
             }
 
             const { repository, query: querySetting } = insight;
-            const viewProviderId = `codeStatsInsight.${id}`
+            const viewProviderId = `codeStatsInsights.${id}`
 
             const provideView = ({ viewer }: { viewer?: sourcegraph.DirectoryViewer }): Promise<sourcegraph.View> => {
 
@@ -105,19 +115,24 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                 return getInsightContent(query, insight);
             }
 
-            context.subscriptions.add(
-                sourcegraph.app.registerViewProvider(`${viewProviderId}.insightsPage`, {
-                    where: 'insightsPage',
-                    provideView,
-                })
-            )
+            const insightPageProvider = sourcegraph.app.registerViewProvider(`${viewProviderId}.insightsPage`, {
+                where: 'insightsPage',
+                provideView,
+            })
 
-            context.subscriptions.add(
-                sourcegraph.app.registerViewProvider(`${viewProviderId}.directory`, {
-                    where: 'directory',
-                    provideView,
-                })
-            )
+            const directoryPageProvider = sourcegraph.app.registerViewProvider(`${viewProviderId}.directory`, {
+                where: 'directory',
+                provideView,
+            })
+
+            // Pass next provider to extension API.
+            context.subscriptions.add(insightPageProvider)
+            context.subscriptions.add(directoryPageProvider)
+
+            // Pass next providers to enclosure subscription bag in case if we got update
+            // from the user/org settings in order for us to be able to close provider observables.
+            previousSubscriptions.add(insightPageProvider)
+            previousSubscriptions.add(directoryPageProvider)
         })
     )
 }
