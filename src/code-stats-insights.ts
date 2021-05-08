@@ -60,7 +60,7 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                 // In a first version of this extension we had different approach hot to set settings
                 // for the sake of backward compatibility we support this old API as well here
                 const insightFromOldAPI: [string, Insight | null] = [
-                    'codeStatsInsight.language',
+                    'codeStatsInsights.insight.language',
                     settings['codeStatsInsights.query']
                         ? {
                             title: 'Language usage',
@@ -96,7 +96,6 @@ export function activate(context: sourcegraph.ExtensionContext): void {
             }
 
             const { repository, query: querySetting } = insight;
-            const viewProviderId = `codeStatsInsights.${id}`
 
             const provideView = ({ viewer }: { viewer?: sourcegraph.DirectoryViewer }): Promise<sourcegraph.View> => {
 
@@ -115,12 +114,12 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                 return getInsightContent(query, insight);
             }
 
-            const insightPageProvider = sourcegraph.app.registerViewProvider(`${viewProviderId}.insightsPage`, {
+            const insightPageProvider = sourcegraph.app.registerViewProvider(`${id}.insightsPage`, {
                 where: 'insightsPage',
                 provideView,
             })
 
-            const directoryPageProvider = sourcegraph.app.registerViewProvider(`${viewProviderId}.directory`, {
+            const directoryPageProvider = sourcegraph.app.registerViewProvider(`${id}.directory`, {
                 where: 'directory',
                 provideView,
             })
