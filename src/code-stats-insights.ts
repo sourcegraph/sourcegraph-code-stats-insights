@@ -57,7 +57,7 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                     .filter(([key]) =>
                         key.startsWith('codeStatsInsights.insight.')) as [string, Insight | null | false][];
 
-                // In a first version of this extension we had different approach hot to set settings
+                // In a first version of this extension we had a different approach on how to set settings
                 // for the sake of backward compatibility we support this old API as well here
                 const insightFromOldAPI: [string, Insight | null] = [
                     'codeStatsInsights.insight.language',
