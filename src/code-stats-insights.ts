@@ -2,8 +2,7 @@ import * as sourcegraph from 'sourcegraph'
 import { from, defer, Subscription } from 'rxjs'
 import { map, retry, startWith, distinctUntilChanged, mergeAll, tap } from 'rxjs/operators'
 import gql from 'tagged-template-noop'
-import { escapeRegExp, partition, sum } from 'lodash'
-import isEqual from 'lodash/isEqual'
+import { escapeRegExp, partition, sum, isEqual } from 'lodash'
 import linguistLanguages from 'linguist-languages'
 import { isLinguistLanguage, parseUri, queryGraphQL } from './utils';
 
