@@ -9,7 +9,7 @@ import { isLinguistLanguage, parseUri, queryGraphQL } from './utils';
 
 /**
  * Code stat insight settings from user/org setting cascade.
- * */
+ */
 interface Insight {
     title: string
     repository?: string;
@@ -43,7 +43,7 @@ interface Insight {
  *      "repository": "github.com/sourcegraph/sourcegraph",
  *      "otherThreshold": "0.03"
  * }
- * */
+ */
 export function activate(context: sourcegraph.ExtensionContext): void {
     const settings = from(sourcegraph.configuration).pipe(
         startWith(null),
