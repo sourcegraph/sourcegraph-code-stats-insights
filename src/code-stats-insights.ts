@@ -66,7 +66,7 @@ export function activate(context: sourcegraph.ExtensionContext): void {
                             title: 'Language usage',
                             query: settings['codeStatsInsights.query'],
                             otherThreshold: settings['codeStatsInsights.otherThreshold']
-                          } as Insight
+                          }
                         : null
                 ]
 
