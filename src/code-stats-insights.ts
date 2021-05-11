@@ -17,10 +17,10 @@ interface Insight {
 
     /**
      *  Synthetic field for backward compatibility.
-     *  In first version of code stats insight this query supposed to be filled
-     *  by users in user/org settings. Now we don't need set this field because
-     *  we can derive query from repository field. But for the sake of compatibility
-     *  of existing first-version insights we left this setting.
+     *  In the first version of code stats insight this query was supposed to be filled
+     *  by users in user/org settings. Now we don't need to set this field anymore because
+     *  we can derive the query from the repository field. But for the sake of compatibility
+     *  with existing first-version insights we left this setting.
      * */
     query?: string;
 }
@@ -206,4 +206,3 @@ async function getInsightContent(query: string, insight: Insight): Promise<sourc
         ],
     }
 }
-
