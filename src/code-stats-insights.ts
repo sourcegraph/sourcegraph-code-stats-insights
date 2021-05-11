@@ -4,14 +4,14 @@ import { map, retry, startWith, distinctUntilChanged, mergeAll, tap } from 'rxjs
 import gql from 'tagged-template-noop'
 import { escapeRegExp, partition, sum, isEqual } from 'lodash'
 import linguistLanguages from 'linguist-languages'
-import { isLinguistLanguage, parseUri, queryGraphQL } from './utils';
+import { isLinguistLanguage, parseUri, queryGraphQL } from './utils'
 
 /**
  * Code stat insight settings from user/org setting cascade.
  */
 interface Insight {
     title: string
-    repository?: string;
+    repository?: string
     otherThreshold?: number
 
     /**
@@ -21,7 +21,7 @@ interface Insight {
      *  we can derive the query from the repository field. But for the sake of compatibility
      *  with existing first-version insights we left this setting.
      * */
-    query?: string;
+    query?: string
 }
 
 /**
@@ -52,27 +52,25 @@ export function activate(context: sourcegraph.ExtensionContext): void {
     // Observe stats insights settings from user/org setting cascade
     const insightChanges = settings.pipe(
         map(settings => {
-                const insightsFromCreationFlow = Array.from(Object.entries(settings))
-                    .filter(([key]) =>
-                        key.startsWith('codeStatsInsights.insight.')) as [string, Insight | null | false][];
+            const insightsFromCreationFlow = Array.from(Object.entries(settings)).filter(([key]) =>
+                key.startsWith('codeStatsInsights.insight.')
+            ) as [string, Insight | null | false][]
 
-                // In a first version of this extension we had a different approach on how to set settings
-                // for the sake of backward compatibility we support this old API as well here
-                const insightFromOldAPI: [string, Insight | null] = [
-                    'codeStatsInsights.insight.language',
-                    settings['codeStatsInsights.query']
-                        ? {
-                            title: 'Language usage',
-                            query: settings['codeStatsInsights.query'],
-                            otherThreshold: settings['codeStatsInsights.otherThreshold']
-                          }
-                        : null
-                ]
+            // In a first version of this extension we had a different approach on how to set settings
+            // for the sake of backward compatibility we support this old API as well here
+            const insightFromOldAPI: [string, Insight | null] = [
+                'codeStatsInsights.insight.language',
+                settings['codeStatsInsights.query']
+                    ? {
+                          title: 'Language usage',
+                          query: settings['codeStatsInsights.query'],
+                          otherThreshold: settings['codeStatsInsights.otherThreshold'],
+                      }
+                    : null,
+            ]
 
-
-                return [insightFromOldAPI, ...insightsFromCreationFlow,]
-            }
-        ),
+            return [insightFromOldAPI, ...insightsFromCreationFlow]
+        }),
         distinctUntilChanged((a, b) => isEqual(a, b))
     )
 
@@ -80,58 +78,59 @@ export function activate(context: sourcegraph.ExtensionContext): void {
     // as well, because of this we have to manage inner subscription ourselves. This
     // subscription bag needed to unsubscribe nested calls in a moment when user/org settings
     // have been updated.
-    let previousSubscriptions = new Subscription();
+    let previousSubscriptions = new Subscription()
 
     context.subscriptions.add(
-        insightChanges.pipe(
-            tap(() => {
-                previousSubscriptions.unsubscribe()
-                previousSubscriptions = new Subscription();
-            }),
-            mergeAll(),
-        ).subscribe(([id, insight]) => {
-            if (!insight) {
-                return
-            }
+        insightChanges
+            .pipe(
+                tap(() => {
+                    previousSubscriptions.unsubscribe()
+                    previousSubscriptions = new Subscription()
+                    context.subscriptions.add(previousSubscriptions)
+                }),
+                mergeAll()
+            )
+            .subscribe(([id, insight]) => {
+                if (!insight) {
+                    return
+                }
 
-            const { repository, query: querySetting } = insight;
+                const { repository, query: querySetting } = insight
 
-            const provideView = ({ viewer }: { viewer?: sourcegraph.DirectoryViewer }): Promise<sourcegraph.View> => {
+                const provideView = ({
+                    viewer,
+                }: {
+                    viewer?: sourcegraph.DirectoryViewer
+                }): Promise<sourcegraph.View> => {
+                    const query = viewer
+                        ? // Show current repo stats instead of repo which has been specified
+                          // in code stats settings.
+                          `repo:^${escapeRegExp(parseUri(viewer.directory.uri).repo)}$`
+                        : querySetting
+                        ? // Show query from old version of code stats insight with full query string
+                          querySetting
+                        : // Calculate query string base on repository string from insight settings
+                          // this is new approach if user setup insight by creation UI.
+                          `repo:^${escapeRegExp(repository)}`
 
-                const query = viewer
-                    // Show current repo stats instead of repo which has been specified
-                    // in code stats settings.
-                    ? `repo:^${escapeRegExp(parseUri(viewer.directory.uri).repo)}$`
-                    : querySetting
-                        // Show query from old version of code stats insight with full query string
-                        ? querySetting
-                        // Calculate query string base on repository string from insight settings
-                        // this is new approach if user setup insight by creation UI.
-                        : `repo:^${escapeRegExp(repository)}`
+                    return getInsightContent(query, insight)
+                }
 
+                const insightPageProvider = sourcegraph.app.registerViewProvider(`${id}.insightsPage`, {
+                    where: 'insightsPage',
+                    provideView,
+                })
 
-                return getInsightContent(query, insight);
-            }
+                const directoryPageProvider = sourcegraph.app.registerViewProvider(`${id}.directory`, {
+                    where: 'directory',
+                    provideView,
+                })
 
-            const insightPageProvider = sourcegraph.app.registerViewProvider(`${id}.insightsPage`, {
-                where: 'insightsPage',
-                provideView,
+                // Pass next providers to enclosure subscription bag in case if we got update
+                // from the user/org settings in order for us to be able to close provider observables.
+                previousSubscriptions.add(insightPageProvider)
+                previousSubscriptions.add(directoryPageProvider)
             })
-
-            const directoryPageProvider = sourcegraph.app.registerViewProvider(`${id}.directory`, {
-                where: 'directory',
-                provideView,
-            })
-
-            // Pass next provider to extension API.
-            context.subscriptions.add(insightPageProvider)
-            context.subscriptions.add(directoryPageProvider)
-
-            // Pass next providers to enclosure subscription bag in case if we got update
-            // from the user/org settings in order for us to be able to close provider observables.
-            previousSubscriptions.add(insightPageProvider)
-            previousSubscriptions.add(directoryPageProvider)
-        })
     )
 }
 
@@ -140,7 +139,7 @@ async function getInsightContent(query: string, insight: Insight): Promise<sourc
     const stats = await defer(() =>
         queryGraphQL(
             gql`
-             query SearchResultsStats($query: String!) {
+                query SearchResultsStats($query: String!) {
                     search(query: $query) {
                         results {
                             limitHit
@@ -160,7 +159,7 @@ async function getInsightContent(query: string, insight: Insight): Promise<sourc
         .pipe(
             // The search may timeout, but a retry is then likely faster because caches are warm
             retry(3),
-            map(data => data.search!.stats),
+            map(data => data.search!.stats)
         )
         .toPromise()
 
@@ -170,10 +169,7 @@ async function getInsightContent(query: string, insight: Insight): Promise<sourc
     linkURL.searchParams.set('q', query)
 
     const otherThreshold = insight.otherThreshold ?? 0.03
-    const [notOther, other] = partition(
-        stats.languages,
-        language => language.totalLines / totalLines >= otherThreshold
-    )
+    const [notOther, other] = partition(stats.languages, language => language.totalLines / totalLines >= otherThreshold)
     return {
         title: insight.title,
         content: [
@@ -190,9 +186,7 @@ async function getInsightContent(query: string, insight: Insight): Promise<sourc
                         ].map(language => ({
                             ...language,
                             fill:
-                                (isLinguistLanguage(language.name) &&
-                                    linguistLanguages[language.name].color) ||
-                                'gray',
+                                (isLinguistLanguage(language.name) && linguistLanguages[language.name].color) || 'gray',
                             linkURL: linkURL.href,
                         })),
                         dataKey: 'totalLines',
